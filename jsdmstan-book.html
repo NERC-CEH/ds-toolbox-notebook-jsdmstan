@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.7.31">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Fiona Seaton">
+<meta name="dcterms.date" content="2025-06-09">
+
+<title>Fitting Joint Species Distribution Models with jsdmstan</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="jsdmstan-book_files/libs/clipboard/clipboard.min.js"></script>
+<script src="jsdmstan-book_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="jsdmstan-book_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="jsdmstan-book_files/libs/quarto-html/popper.min.js"></script>
+<script src="jsdmstan-book_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="jsdmstan-book_files/libs/quarto-html/anchor.min.js"></script>
+<link href="jsdmstan-book_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="jsdmstan-book_files/libs/quarto-html/quarto-syntax-highlighting-e1a5c8363afafaef2c763b6775fbf3ca.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="jsdmstan-book_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="jsdmstan-book_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="jsdmstan-book_files/libs/bootstrap/bootstrap-bb462d781dde1847d9e3ccf7736099dd.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="jsdmstan-book.ipynb" download="jsdmstan-book.ipynb"><i class="bi bi-journal-code"></i>Jupyter</a></li></ul></div></div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Fitting Joint Species Distribution Models with jsdmstan</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Fiona Seaton </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">June 9, 2025</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>The jsdmstan R package is an interface for fitting joint species distribution models (JSDMs) in Stan. First, we will go through an introduction to joint species distribution models in general, followed by examples of how to use the jsdmstan package to simulate data and fit JSDMs to this simulated data, and finally two examples of using jsdmstan on real ecological data.</p>
+<section id="introduction-to-joint-species-distribution-models" class="level1">
+<h1>Introduction to Joint Species Distribution Models</h1>
+<p>Joint Species Distibution Models are models that model an entire community of species simultaneously. The idea behind these is that they allow information to be borrowed across species, such that the covariance between species can be used to inform the predictions of distributions of related or commonly co-occurring species.</p>
+<p>In plain language (or as plain as I can manage) jSDMs involve the modelling of an entire species community as a function of some combination of intercepts, covariate data and species covariance. Therefore the change of a single species is related to not only change in the environment but also how it relates to other species. There are several decisions to be made in how to specify these models - the standard decisions on which covariates to include, whether each species should have its own intercept (generally yes) and how to represent change across sites - but also how to represent the covariance between species. There are two options for representing this species covariance in this package. First, the original way of running jSDMs was to model the entire covariance matrix between species in a multivariate generalised linear mixed model (MGLMM). However, more recently there have been methods developed that involve representing the covariance matrix with a set of linear latent variables - known as generalised linear latent variable models (GLLVM).</p>
+<p>The jsdmstan package aims to provide an interface for fitting these models in <a href="https://mc-stan.org/">Stan</a> using the Stan Hamiltonian Monte Carlo sampling as a robust Bayesian methodology.</p>
+<section id="underlying-maths" class="level2">
+<h2 class="anchored" data-anchor-id="underlying-maths">Underlying maths</h2>
+<p>Feel free to skip this bit if you don’t want to read equations, it is largely based on Warton et al.&nbsp;(<a href="http:://doi.org/10.1016/j.tree.2015.09.007">2015</a>). We model the community data <span class="math inline">\(m_{ij}\)</span> for each site <span class="math inline">\(i\)</span> and taxon <span class="math inline">\(j\)</span> as a function of a species intercept, environmental covariates and species covariance matrix:</p>
+<p><span class="math display">\[ g(m_{ij}) = \beta_{0j} + \mathbf{x}_i^\intercal\beta_j + u_{ij} \]</span></p>
+<p>where <span class="math inline">\(g(\cdot)\)</span> is the link function, <span class="math inline">\(\mathbf{x}_i^\intercal\)</span> is the transpose of vector <span class="math inline">\(\mathbf{x}\)</span>, and for each taxon <span class="math inline">\(j\)</span>, <span class="math inline">\(\beta_{0j}\)</span> is an intercept and <span class="math inline">\(beta_j\)</span> is a vector of regression coefficients related to measured predictors.</p>
+<p>A site effect <span class="math inline">\(\alpha_{i}\)</span> can also be added to adjust for total abundance or richness:</p>
+<p><span class="math display">\[ g(m_{ij}) = \alpha_{i} + \beta_{0j} + \mathbf{x}_i^\intercal\beta_j + u_{ij} \]</span></p>
+<section id="multivariate-generalised-linear-mixed-models" class="level3">
+<h3 class="anchored" data-anchor-id="multivariate-generalised-linear-mixed-models">Multivariate Generalised Linear Mixed Models</h3>
+<p>The entire matrix of covariance between species is modelled in MGLMMs.</p>
+<p><span class="math display">\[ u_{ij} \sim \mathrm{N}(\mathbf{0},\mathbf{\Sigma}) \]</span></p>
+<p>Fitting the entire covariance matrix means that the amount of time required to fit these models scales with the number of species cubed, and the data required scales with the number of species squared. This makes these models both computationally and data intensive.</p>
+</section>
+<section id="generalised-linear-latent-variable-models" class="level3">
+<h3 class="anchored" data-anchor-id="generalised-linear-latent-variable-models">Generalised Linear Latent Variable Models</h3>
+<p>In response to some of these issues in fitting MGLMMs, GLLVMs were developed in which <span class="math inline">\(u_{ij}\)</span> is now specified as a linear function of a set of latent variables <span class="math inline">\(\mathbf{z_i}\)</span>:</p>
+<p><span class="math display">\[ y_{ij}|\mathbf{u}_i \sim \mathrm{F}(m_{ij},\phi_j) \]</span> <span class="math display">\[ u_{ij} = \mathbf{z}_i^\intercal \lambda_j \]</span></p>
+<p>The latent variables <span class="math inline">\(\mathbf{z_i}\)</span> are treated as random by assuming:</p>
+<p><span class="math display">\[y_{ij}|\mathbf{z_i} \sim \mathrm{F}(m_{ij},\phi_j)) \]</span> <span class="math display">\[\mathbf{z_i} \sim \mathrm{N}(\mathbf{0},\mathbf{1}) \]</span> Treating the species covariance as pulling from a set of latent variables greatly reduces the computational time required to fit these models.</p>
+</section>
+<section id="relationship-to-environmental-covariates" class="level3">
+<h3 class="anchored" data-anchor-id="relationship-to-environmental-covariates">Relationship to environmental covariates</h3>
+<p>Within jsdmstan the response of species to environmental covariates can either be unstructured (the default) or constrained by a covariance matrix between the environmental covariates. This second option (specified by setting <code>beta_param = "cor"</code>) assumes that if one species is strongly positively related to multiple covariates then it is more likely that other species will either also be positively related to all these covariates, or negatively related. Mathematically this corresponds to:</p>
+<p><span class="math display">\[\beta_j \sim \mathrm{N}(\mathbf{0},\mathbf{\Sigma})\]</span></p>
+</section>
+</section>
+</section>
+<section id="examples-with-simulated-data" class="level1">
+<h1>Examples with Simulated Data</h1>
+<p>First, we’ll load in the R packages we’ll be using here. The jsdmstan package can be installed from github using the remotes package.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># remotes::install_github("NERC-CEH/jsdmstan")</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(jsdmstan)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">3757892</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="fitting-a-mglmm" class="level2">
+<h2 class="anchored" data-anchor-id="fitting-a-mglmm">Fitting a MGLMM</h2>
+<p>We can use the in-built functions for simulating data according to the MGLMM model - we’ll choose to simulate 15 species over 200 sites with 2 environmental covariates. The species are assumed to follow a Poisson distribution (with a log-link), and we use the defaults of including a species-specific intercept but no site-specific intercept. At the moment only default priors (standard normal distribution) are supported. We can do this using either the <code>jsdm_sim_data()</code> function with <code>method = "mglmm"</code> or with the <code>mglmm_sim_data()</code> function which just calls <code>jsdm_sim_data()</code> in the background.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>nsites <span class="ot">&lt;-</span> <span class="dv">75</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>nspecies <span class="ot">&lt;-</span> <span class="dv">8</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>ncovar <span class="ot">&lt;-</span> <span class="dv">2</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>mglmm_test_data <span class="ot">&lt;-</span> <span class="fu">mglmm_sim_data</span>(<span class="at">N =</span> nsites, <span class="at">S =</span> nspecies, </span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">K =</span> ncovar, <span class="at">family =</span> <span class="st">"pois"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This returns a list, which includes the Y matrix, the X matrix, plus also the exact parameters used to create the data:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(mglmm_test_data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Y"    "pars" "N"    "S"    "D"    "K"    "X"   </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(mglmm_test_data<span class="sc">$</span>X)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now, to fit the model we can use the <code>stan_jsdm()</code> function, which interfaces to Stan through the <a href="https://mc-stan.org/rstan/">rstan package</a>. There are multiple ways to supply data to the <code>stan_jsdm()</code> function, one is to supply the data as a list with the appropriate named components (the <code>jsdm_sim_data()</code> functions supply data in the correct format already), the second way is to specify the Y and X matrices directly, and the third way is to use a formula for the environmental covariates and supply the environmental data to the <code>data</code> argument, which is what we’ll use here:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>mglmm_fit <span class="ot">&lt;-</span> <span class="fu">stan_jsdm</span>(<span class="sc">~</span> V1 <span class="sc">+</span> V2, <span class="at">data =</span> dat, <span class="at">Y =</span> mglmm_test_data<span class="sc">$</span>Y, </span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                       <span class="at">family =</span> <span class="st">"pois"</span>, <span class="at">method =</span> <span class="st">"mglmm"</span>, <span class="at">refresh =</span> <span class="dv">0</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>If we print the model object we will get a brief overview of the type of jSDM and the data, plus if there are any parameters with Rhat &gt; 1.01 or effective sample size ratio (Neff/N) &lt; 0.05 then they will be printed:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>mglmm_fit</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Family: poisson 
+ Model type: mglmm
+  Number of species: 8
+  Number of sites: 75
+  Number of predictors: 3
+
+Model run on 4 chains with 4000 iterations per chain (2000 warmup).
+
+No parameters with Rhat &gt; 1.01 or Neff/N &lt; 0.05</code></pre>
+</div>
+</div>
+<p>To get a summary of all the model parameters we can use <code>summary()</code>, there are many parameters in these models so we just include a few here:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mglmm_fit, <span class="at">pars =</span> <span class="st">"cor_species"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                   mean    sd    15%    85%  Rhat Bulk.ESS Tail.ESS
+cor_species[2,1] -0.258 0.261 -0.534  0.019 1.002     1589     2574
+cor_species[3,1]  0.552 0.152  0.390  0.713 1.001     2483     4145
+cor_species[4,1] -0.268 0.152 -0.424 -0.111 1.002     2736     4083
+cor_species[5,1]  0.450 0.190  0.251  0.651 1.001     2326     3703
+cor_species[6,1] -0.096 0.164 -0.264  0.076 1.001     2650     4743
+cor_species[7,1] -0.348 0.115 -0.470 -0.228 1.002     2600     4817
+cor_species[8,1]  0.046 0.114 -0.072  0.162 1.000     2448     4063
+cor_species[1,2] -0.258 0.261 -0.534  0.019 1.002     1589     2574
+cor_species[2,2]  1.000 0.000  1.000  1.000 1.000     7833       NA
+cor_species[3,2] -0.255 0.259 -0.525  0.015 1.002     1984     3235
+cor_species[4,2]  0.206 0.253 -0.057  0.474 1.002     1541     2820
+cor_species[5,2] -0.241 0.267 -0.520  0.041 1.002     2687     3983
+cor_species[6,2]  0.207 0.265 -0.077  0.483 1.001     1641     2579
+cor_species[7,2]  0.190 0.255 -0.083  0.459 1.001      957     2053
+cor_species[8,2]  0.050 0.274 -0.242  0.346 1.001      831     1558
+cor_species[1,3]  0.552 0.152  0.390  0.713 1.001     2483     4145
+cor_species[2,3] -0.255 0.259 -0.525  0.015 1.002     1984     3235
+cor_species[3,3]  1.000 0.000  1.000  1.000 1.000     8019     7569
+cor_species[4,3] -0.378 0.153 -0.537 -0.219 1.000     3941     5536
+cor_species[5,3]  0.380 0.199  0.170  0.592 1.003     2514     4534
+cor_species[6,3] -0.194 0.176 -0.377 -0.012 1.002     2675     4889
+cor_species[7,3] -0.222 0.131 -0.357 -0.088 1.001     3087     4432
+cor_species[8,3] -0.121 0.133 -0.261  0.016 1.004     2096     4288
+cor_species[1,4] -0.268 0.152 -0.424 -0.111 1.002     2736     4083
+cor_species[2,4]  0.206 0.253 -0.057  0.474 1.002     1541     2820
+cor_species[3,4] -0.378 0.153 -0.537 -0.219 1.000     3941     5536
+cor_species[4,4]  1.000 0.000  1.000  1.000 1.000     8152       NA
+cor_species[5,4] -0.172 0.180 -0.357  0.019 1.001     3464     5486
+cor_species[6,4]  0.557 0.162  0.384  0.728 1.001     4349     5516
+cor_species[7,4] -0.276 0.145 -0.425 -0.126 1.002     2578     3579
+cor_species[8,4]  0.403 0.144  0.254  0.555 1.004     1868     3774
+cor_species[1,5]  0.450 0.190  0.251  0.651 1.001     2326     3703
+cor_species[2,5] -0.241 0.267 -0.520  0.041 1.002     2687     3983
+cor_species[3,5]  0.380 0.199  0.170  0.592 1.003     2514     4534
+cor_species[4,5] -0.172 0.180 -0.357  0.019 1.001     3464     5486
+cor_species[5,5]  1.000 0.000  1.000  1.000 1.000     7881     7281
+cor_species[6,5] -0.169 0.208 -0.382  0.049 1.001     3431     5608
+cor_species[7,5] -0.380 0.193 -0.581 -0.171 1.001     1486     3017
+cor_species[8,5] -0.065 0.177 -0.248  0.119 1.004     1543     2996
+cor_species[1,6] -0.096 0.164 -0.264  0.076 1.001     2650     4743
+cor_species[2,6]  0.207 0.265 -0.077  0.483 1.001     1641     2579
+cor_species[3,6] -0.194 0.176 -0.377 -0.012 1.002     2675     4889
+cor_species[4,6]  0.557 0.162  0.384  0.728 1.001     4349     5516
+cor_species[5,6] -0.169 0.208 -0.382  0.049 1.001     3431     5608
+cor_species[6,6]  1.000 0.000  1.000  1.000 1.000     8015       NA
+cor_species[7,6] -0.139 0.151 -0.297  0.020 1.000     2866     4823
+cor_species[8,6]  0.475 0.137  0.334  0.620 1.002     2467     4808
+cor_species[1,7] -0.348 0.115 -0.470 -0.228 1.002     2600     4817
+cor_species[2,7]  0.190 0.255 -0.083  0.459 1.001      957     2053
+cor_species[3,7] -0.222 0.131 -0.357 -0.088 1.001     3087     4432
+cor_species[4,7] -0.276 0.145 -0.425 -0.126 1.002     2578     3579
+cor_species[5,7] -0.380 0.193 -0.581 -0.171 1.001     1486     3017
+cor_species[6,7] -0.139 0.151 -0.297  0.020 1.000     2866     4823
+cor_species[7,7]  1.000 0.000  1.000  1.000 1.000     7748       NA
+cor_species[8,7] -0.157 0.109 -0.272 -0.041 1.002     2728     4274
+cor_species[1,8]  0.046 0.114 -0.072  0.162 1.000     2448     4063
+cor_species[2,8]  0.050 0.274 -0.242  0.346 1.001      831     1558
+cor_species[3,8] -0.121 0.133 -0.261  0.016 1.004     2096     4288
+cor_species[4,8]  0.403 0.144  0.254  0.555 1.004     1868     3774
+cor_species[5,8] -0.065 0.177 -0.248  0.119 1.004     1543     2996
+cor_species[6,8]  0.475 0.137  0.334  0.620 1.002     2467     4808
+cor_species[7,8] -0.157 0.109 -0.272 -0.041 1.002     2728     4274
+cor_species[8,8]  1.000 0.000  1.000  1.000 1.000     7797     7780</code></pre>
+</div>
+</div>
+<p>To get a better overview of the R-hat and effective sample size we can use the <code>mcmc_plot()</code> function to plot histograms of R-hat and ESS.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_plot</span>(mglmm_fit, <span class="at">plotfun =</span> <span class="st">"rhat_hist"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_plot</span>(mglmm_fit, <span class="at">plotfun =</span> <span class="st">"neff_hist"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>We can also examine the output for each parameter visually using a traceplot combined with a density plot, which is given by the default <code>plot()</code> command:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(mglmm_fit, <span class="at">ask =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/unnamed-chunk-9-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/unnamed-chunk-9-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/unnamed-chunk-9-4.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>By default the <code>plot()</code> command plots all of the parameters with sigma or kappa in their name plus a random selection of 20 other parameters, but this can be overridden by either specifying the parameters by name (with or without regular expression matching) or changing the number of parameters to be randomly sampled. Use the <code>get_parnames()</code> function to get the names of parameters within a model - and the <code>jsdm_stancode()</code> function can also be used to see the underlying structure of the model.</p>
+<p>All the mcmc plot types within bayesplot are supported by the <code>mcmc_plot()</code> function, and to see a full list either use <code>bayesplot::available_mcmc()</code> or run <code>mcmc_plot()</code> with an incorrect type and the options will be printed.</p>
+<p>We can also view the environmental effect parameters for each species using the <code>envplot()</code> function.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">envplot</span>(mglmm_fit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Posterior predictions can be extracted from the models using either <code>posterior_linpred()</code> or <code>posterior_predict()</code>, where the linpred function extracts the linear predictor for the community composition within each draw and the predict function combines this linear predictor extraction with a random generation based on the predicted probability for the family. Both functions by default return a list of length equal to the number of draws extracted, where each element of the list is a sites by species matrix.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>mglmm_pp <span class="ot">&lt;-</span> <span class="fu">posterior_predict</span>(mglmm_fit)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(mglmm_pp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 8000</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(mglmm_pp[[<span class="dv">1</span>]])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 75  8</code></pre>
+</div>
+</div>
+<p>As well as the MCMC plotting functions within bayesplot the ppc_ family of functions is also supported through the <code>pp_check()</code> function. This family of functions provides a graphical way to check your posterior against the data used within the model to evaluate model fit - called a posterior retrodictive check (or posterior predictive historically and when the prior only has been sampled from). To use these you need to have set <code>save_data = TRUE</code> within the <code>stan_jsdm()</code> call. Unlike in other packages by default <code>pp_check()</code> for <code>jsdmStanFit</code> objects extracts the posterior predictions then calculates summary statistics over the rows and plots those summary statistics against the same for the original data. The default behaviour is to calculate the sum of all the species per site - i.e.&nbsp;total abundance.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pp_check</span>(mglmm_fit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The summary statistic can be changed, as can whether it is calculated for every species or every site:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pp_check</span>(mglmm_fit, <span class="at">summary_stat =</span> <span class="st">"mean"</span>, <span class="at">calc_over =</span> <span class="st">"species"</span>,</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>         <span class="at">plotfun =</span> <span class="st">"ecdf_overlay"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>We can examine the species-specific posterior predictive check through using <code>multi_pp_check()</code>, or examine how well the relationships between specific species are recovered using <code>pp_check()</code> with <code>plotfun = "pairs"</code>.</p>
+<p>As we have run the above model on simulated data and the original data list contains the parameters used to simulate the data we can use the <code>mcmc_recover_</code> functions from <code>bayesplot</code> to see how the model did:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_plot</span>(mglmm_fit, <span class="at">plotfun =</span> <span class="st">"recover_hist"</span>,</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>          <span class="at">pars =</span> <span class="fu">paste0</span>(<span class="st">"sigmas_species["</span>,<span class="dv">1</span><span class="sc">:</span><span class="dv">8</span>,<span class="st">"]"</span>),</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>          <span class="at">true =</span> mglmm_test_data<span class="sc">$</span>pars<span class="sc">$</span>sigmas_species)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_plot</span>(mglmm_fit, <span class="at">plotfun =</span> <span class="st">"recover_intervals"</span>,</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>          <span class="at">pars =</span> <span class="fu">paste0</span>(<span class="st">"cor_species["</span>,<span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span>nspecies, nspecies<span class="sc">:</span><span class="dv">1</span>),<span class="st">","</span>,</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>                        <span class="fu">unlist</span>(<span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">8</span>, <span class="st">":"</span>,<span class="dv">8</span>)),<span class="st">"]"</span>),</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>          <span class="at">true =</span> <span class="fu">c</span>(mglmm_test_data<span class="sc">$</span>pars<span class="sc">$</span>cor_species[<span class="fu">lower.tri</span>(mglmm_test_data<span class="sc">$</span>pars<span class="sc">$</span>cor_species, <span class="at">diag =</span> <span class="cn">TRUE</span>)])) <span class="sc">+</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">90</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="fitting-a-gllvm" class="level2">
+<h2 class="anchored" data-anchor-id="fitting-a-gllvm">Fitting a GLLVM</h2>
+<p>The model fitting workflow for latent variable models is very similar to that above, with the addition of specifying the number of latent variables (D) in the data simulation and model fit. Here we change the family to a Bernoulli family (i.e.&nbsp;the special case of the binomial where the number of trials is 1 for all observations), make the covariate effects on each species draw from a correlation matrix such that information can be shared across species, and change the prior to be a Student’s T prior on the predictor-specific sigma parameter.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">3562251</span>)</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>gllvm_data <span class="ot">&lt;-</span> <span class="fu">gllvm_sim_data</span>(<span class="at">N =</span> <span class="dv">50</span>, <span class="at">S =</span> <span class="dv">12</span>, <span class="at">D =</span> <span class="dv">2</span>, <span class="at">K =</span> <span class="dv">1</span>,</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>                             <span class="at">family =</span> <span class="st">"bernoulli"</span>,</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>                             <span class="at">beta_param =</span> <span class="st">"cor"</span>,</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>                             <span class="at">prior =</span> <span class="fu">jsdm_prior</span>(<span class="at">sigmas_preds =</span> <span class="st">"student_t(3,0,1)"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>gllvm_fit <span class="ot">&lt;-</span> <span class="fu">stan_jsdm</span>(<span class="at">Y =</span> gllvm_data<span class="sc">$</span>Y, <span class="at">X =</span> gllvm_data<span class="sc">$</span>X,</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>                       <span class="at">D =</span> gllvm_data<span class="sc">$</span>D,  </span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>                       <span class="at">family =</span> <span class="st">"bernoulli"</span>,</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>                       <span class="at">method =</span> <span class="st">"gllvm"</span>, </span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>                       <span class="at">beta_param =</span> <span class="st">"cor"</span>,</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>                       <span class="at">prior =</span> <span class="fu">jsdm_prior</span>(<span class="at">sigmas_preds =</span> <span class="st">"student_t(3,0,1)"</span>),</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>                       <span class="at">refresh =</span> <span class="dv">0</span>)</span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>gllvm_fit</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Family: bernoulli 
+ Model type: gllvm with 2 latent variables
+  Number of species: 12
+  Number of sites: 50
+  Number of predictors: 2
+
+Model run on 4 chains with 4000 iterations per chain (2000 warmup).
+
+No parameters with Rhat &gt; 1.01 or Neff/N &lt; 0.05</code></pre>
+</div>
+</div>
+<p>Again, the diagnostic statistics seem reasonable:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_plot</span>(gllvm_fit, <span class="at">plotfun =</span> <span class="st">"rhat_hist"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mcmc_plot</span>(gllvm_fit, <span class="at">plotfun =</span> <span class="st">"neff_hist"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/unnamed-chunk-19-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>For brevity’s sake we will not go into the detail of the different functions again here, however there is one plotting function specifically for GLLVM models - <code>ordiplot()</code>. This plots the species or sites scores against the latent variables from a random selection of draws:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ordiplot</span>(gllvm_fit, <span class="at">errorbar_range =</span> <span class="fl">0.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ordiplot</span>(gllvm_fit, <span class="at">type =</span> <span class="st">"sites"</span>, <span class="at">geom =</span> <span class="st">"text"</span>, <span class="at">errorbar_range =</span> <span class="dv">0</span>) <span class="sc">+</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"none"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/unnamed-chunk-21-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>You can change the latent variables selected by specifying the <code>choices</code> argument, and alter the number of draws or whether you want to plot species or sites with the other arguments.</p>
+</section>
+</section>
+<section id="examples-with-real-data" class="level1">
+<h1>Examples with Real Data</h1>
+<section id="mglmm-with-broadleaved-woodland-survey-data" class="level2">
+<h2 class="anchored" data-anchor-id="mglmm-with-broadleaved-woodland-survey-data">MGLMM with broadleaved woodland survey data</h2>
+<p>We read in the bunce71 data from the jsdmstan package, giving a response matrix of 45 tree genera over 103 sites and an environmental information matrix that contains site location, number of plots per site as well as five predictor variables - annual rainfall, maximum temperature in summer, minimum temperature in winter, soil organic matter and soil pH. We’re also changing the plotting theme, but that’s just to make the following plots easier to parse and can be skipped if preferred.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(<span class="st">"bunce71"</span>)</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_set</span>(bayesplot<span class="sc">::</span><span class="fu">theme_default</span>() <span class="sc">+</span> </span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>            <span class="fu">theme</span>(<span class="at">panel.grid.major.y =</span> <span class="fu">element_line</span>(<span class="at">colour =</span> <span class="st">"grey92"</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We scale and centre the environmental predictor data - this is particularly necessary as the rainfall data is centred around 1000. We also sort the columns of the data frame of abundance, but this is purely to make the graphs easier to read later on.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>bunce71_env <span class="ot">&lt;-</span> <span class="fu">mutate</span>(bunce71<span class="sc">$</span>env, <span class="fu">across</span>(pH<span class="sc">:</span>WinterMinTemp, scale))</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>bunce71_abund <span class="ot">&lt;-</span> bunce71<span class="sc">$</span>abund[,<span class="fu">names</span>(<span class="fu">sort</span>(<span class="fu">colSums</span>(bunce71<span class="sc">$</span>abund<span class="sc">&gt;</span><span class="dv">0</span>),</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>                                           <span class="at">decreasing =</span> <span class="cn">TRUE</span>))]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We fit the model with unstructured environmental effects, default priors, a binomial family distribution (Number of trials = number of plots per site) and the default number of iterations.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>bwmod <span class="ot">&lt;-</span> <span class="fu">stan_mglmm</span>(<span class="sc">~</span>Rainfall <span class="sc">+</span> SummerMaxTemp <span class="sc">+</span> WinterMinTemp <span class="sc">+</span> pH <span class="sc">+</span> SOM,</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">data =</span> bunce71_env, <span class="at">Y =</span> bunce71_abund, </span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">Ntrials =</span> bunce71_env<span class="sc">$</span>Nplots, </span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">family =</span> <span class="st">"binomial"</span>, </span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">cores =</span> <span class="dv">4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>bwmod</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Family: binomial 
+ Model type: mglmm
+  Number of species: 45
+  Number of sites: 103
+  Number of predictors: 6
+
+Model run on 4 chains with 4000 iterations per chain (2000 warmup).
+
+Parameters with Rhat &gt; 1.01, or Neff/N &lt; 0.05:
+                   mean sd 15% 85% Rhat Bulk.ESS Tail.ESS
+cor_species[15,15]    1  0   1   1    1     8215     7647
+cor_species[17,17]    1  0   1   1    1     7959     7566</code></pre>
+</div>
+</div>
+<p>No warnings are returned, the model has run acceptably with all Rhats &lt; 1.01 and effective sample sizes &gt; 500. Now we can evaluate fit to data, first by looking at some summary statistics and then by looking at fit for each individual species:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pp_check</span>(bwmod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/bw%20pp_check-1.png" class="img-fluid figure-img" width="768"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">&lt;-</span> <span class="fu">pp_check</span>(bwmod,  <span class="at">plotfun =</span> <span class="st">"ecdf_overlay"</span>,</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>         <span class="at">summary_stat =</span> <span class="cf">function</span>(x) <span class="fu">sum</span>(x<span class="sc">&gt;</span><span class="dv">0</span>), <span class="at">ndraws =</span> <span class="dv">20</span>) <span class="sc">+</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"#Genera per site"</span>)</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>p2 <span class="ot">&lt;-</span> <span class="fu">pp_check</span>(bwmod,  <span class="at">plotfun =</span> <span class="st">"ecdf_overlay"</span>, <span class="at">calc_over =</span> <span class="st">"species"</span>,</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>         <span class="at">summary_stat =</span> <span class="cf">function</span>(x) <span class="fu">sum</span>(x<span class="sc">&gt;</span><span class="dv">0</span>), <span class="at">ndraws =</span> <span class="dv">20</span>) <span class="sc">+</span></span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"#Sites per genus"</span>)</span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>p1<span class="sc">+</span>p2 <span class="sc">+</span> <span class="fu">plot_annotation</span>(<span class="at">tag_levels =</span> <span class="st">"a"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/bw%20pp_check-2.png" class="img-fluid figure-img" width="768"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">multi_pp_check</span>(bwmod, <span class="at">plotfun =</span> <span class="st">"ecdf_overlay"</span>, <span class="at">species =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">9</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/bw%20multi_pp_check-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">multi_pp_check</span>(bwmod, <span class="at">plotfun =</span> <span class="st">"ecdf_overlay"</span>, <span class="at">species =</span> <span class="dv">10</span><span class="sc">:</span><span class="dv">18</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/bw%20multi_pp_check-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">multi_pp_check</span>(bwmod, <span class="at">plotfun =</span> <span class="st">"ecdf_overlay"</span>, <span class="at">species =</span> <span class="dv">19</span><span class="sc">:</span><span class="dv">27</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/bw%20multi_pp_check-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">multi_pp_check</span>(bwmod, <span class="at">plotfun =</span> <span class="st">"ecdf_overlay"</span>, <span class="at">species =</span> <span class="dv">28</span><span class="sc">:</span><span class="dv">36</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/bw%20multi_pp_check-4.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="fu">multi_pp_check</span>(bwmod, <span class="at">plotfun =</span> <span class="st">"ecdf_overlay"</span>, <span class="at">species =</span> <span class="dv">37</span><span class="sc">:</span><span class="dv">45</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/bw%20multi_pp_check-5.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>We can now plot the environmental effects for each species:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">envplot</span>(bwmod, <span class="at">widths =</span> <span class="fu">c</span>(<span class="fl">1.5</span>,<span class="dv">1</span>,<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/bw%20envplot-1.png" class="img-fluid figure-img" width="768"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>We can also plot the modelled correlations between species once this environmental effect was accounted for:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">corrplot</span>(bwmod, <span class="at">species =</span> <span class="fu">c</span>(<span class="st">"Betula"</span>,<span class="st">"Fraxinus"</span>,<span class="st">"Quercus"</span>,<span class="st">"Corylus"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/bw%20corrs-1.png" class="img-fluid figure-img" width="576"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>A subset of these plots are combined for the paper:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>e1 <span class="ot">&lt;-</span> <span class="fu">envplot</span>(bwmod, <span class="at">widths =</span> <span class="fu">c</span>(<span class="fl">1.4</span>,<span class="dv">1</span>), <span class="at">preds =</span> <span class="fu">c</span>(<span class="st">"pH"</span>,<span class="st">"SOM"</span>))</span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>c1 <span class="ot">&lt;-</span> <span class="fu">corrplot</span>(bwmod, <span class="at">species =</span> <span class="fu">c</span>(<span class="st">"Betula"</span>,<span class="st">"Fraxinus"</span>))</span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>ggpubr<span class="sc">::</span><span class="fu">ggarrange</span>(e1,c1, <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"a)"</span>,<span class="st">"b)"</span>,<span class="st">"c)"</span>,<span class="st">"d)"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/unnamed-chunk-23-1.png" class="img-fluid figure-img" width="768"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="gllvm-with-spider-data" class="level2">
+<h2 class="anchored" data-anchor-id="gllvm-with-spider-data">GLLVM with spider data</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_set</span>(bayesplot<span class="sc">::</span><span class="fu">theme_default</span>())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We use the spider data from the mvabund package to run a gllvm model with two latent variables and a negative binomial response. All other options are set to the default. Environmental predictors are scaled.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(<span class="st">"spider"</span>, <span class="at">package =</span> <span class="st">"mvabund"</span>)</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>spider<span class="sc">$</span>x <span class="ot">&lt;-</span> <span class="fu">scale</span>(spider<span class="sc">$</span>x)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>spmod <span class="ot">&lt;-</span> <span class="fu">stan_gllvm</span>(<span class="at">X =</span> spider<span class="sc">$</span>x, <span class="at">Y =</span> spider<span class="sc">$</span>abund, <span class="at">D =</span> <span class="dv">2</span>,</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">family =</span> <span class="st">"neg"</span>, <span class="at">cores =</span> <span class="dv">4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>spmod</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Family: neg_binomial 
+ With parameters: kappa 
+Model type: gllvm with 2 latent variables
+  Number of species: 12
+  Number of sites: 28
+  Number of predictors: 7
+
+Model run on 4 chains with 4000 iterations per chain (2000 warmup).
+
+No parameters with Rhat &gt; 1.01 or Neff/N &lt; 0.05</code></pre>
+</div>
+</div>
+<p>No warnings are returned, the model has run acceptably with all Rhats &lt; 1.01 and effective sample sizes &gt; 500. Now we can evaluate fit to data, first by looking at some summary statistics and then by looking at fit for each individual species:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">&lt;-</span> <span class="fu">pp_check</span>(spmod, <span class="at">plotfun =</span> <span class="st">"ecdf_overlay"</span>, <span class="at">ndraws =</span> <span class="dv">20</span>) <span class="sc">+</span></span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Abundance"</span>) <span class="sc">+</span></span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_cartesian</span>(<span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">750</span>))</span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>p2 <span class="ot">&lt;-</span> <span class="fu">pp_check</span>(spmod,  <span class="at">plotfun =</span> <span class="st">"ecdf_overlay"</span>, </span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a>         <span class="at">summary_stat =</span> <span class="cf">function</span>(x) <span class="fu">sum</span>(x<span class="sc">&gt;</span><span class="dv">0</span>), <span class="at">ndraws =</span> <span class="dv">20</span>) <span class="sc">+</span> </span>
+<span id="cb50-6"><a href="#cb50-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Richness"</span>)<span class="sc">+</span></span>
+<span id="cb50-7"><a href="#cb50-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_cartesian</span>(<span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">12</span>))</span>
+<span id="cb50-8"><a href="#cb50-8" aria-hidden="true" tabindex="-1"></a>p1 <span class="sc">+</span> p2 <span class="sc">+</span> <span class="fu">plot_annotation</span>(<span class="at">tag_levels =</span> <span class="st">"a"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/sp%20pp_check-1.png" class="img-fluid figure-img" width="768"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="fu">multi_pp_check</span>(spmod, <span class="at">plotfun =</span> <span class="st">"ecdf_overlay"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/sp%20multi_pp_check-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>We can now plot the environmental effects for each species:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="fu">envplot</span>(spmod, <span class="at">widths =</span> <span class="fu">c</span>(<span class="fl">1.2</span>,<span class="dv">1</span>,<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/sp%20envplot-1.png" class="img-fluid figure-img" width="768"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>We can also plot latent variable loadings for the species and sites:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>o1 <span class="ot">&lt;-</span> <span class="fu">ordiplot</span>(spmod, <span class="at">ndraws =</span> <span class="dv">0</span>, <span class="at">geom =</span> <span class="st">"text"</span>, <span class="at">size =</span> <span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">1</span>),</span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>               <span class="at">errorbar_linewidth =</span> <span class="fl">0.5</span>, <span class="at">errorbar_range =</span> <span class="fl">0.5</span>) <span class="sc">+</span> </span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"none"</span>) </span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>o2 <span class="ot">&lt;-</span> <span class="fu">ordiplot</span>(spmod, <span class="at">ndraws =</span> <span class="dv">0</span>, <span class="at">geom =</span> <span class="st">"text"</span>, <span class="at">type =</span> <span class="st">"sites"</span>, <span class="at">size =</span> <span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">1</span>), </span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>               <span class="at">errorbar_range =</span> <span class="cn">NULL</span>)</span>
+<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a>o1 <span class="sc">+</span> o2 <span class="sc">+</span> <span class="fu">plot_annotation</span>(<span class="at">tag_levels =</span> <span class="st">"a"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/sp%20ordiplot-1.png" class="img-fluid figure-img" width="768"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Note that while the model fits the data well, the estimates for the latent variable loadings indicate that the model are trending towards a linear fit with each other indicating the model does not have sufficient information to estimate these latent variables on top of the six environmental predictors. Therefore, we shall fit a reduced model with fewer environmental predictors included.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>spmod2 <span class="ot">&lt;-</span> <span class="fu">update</span>(spmod, <span class="at">newX =</span> spider<span class="sc">$</span>x[,<span class="fu">c</span>(<span class="st">"soil.dry"</span>,<span class="st">"herb.layer"</span>)],</span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>                 <span class="at">cores =</span> <span class="dv">4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>spmod2</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Family: neg_binomial 
+ With parameters: kappa 
+Model type: gllvm with 2 latent variables
+  Number of species: 12
+  Number of sites: 28
+  Number of predictors: 3
+
+Model run on 4 chains with 4000 iterations per chain (2000 warmup).
+
+No parameters with Rhat &gt; 1.01 or Neff/N &lt; 0.05</code></pre>
+</div>
+</div>
+<p>No warnings are returned, the model has run acceptably with all Rhats &lt; 1.01 and effective sample sizes &gt; 500. Now we can evaluate fit to data, first by looking at some summary statistics and then by looking at fit for each individual species:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a>p1b <span class="ot">&lt;-</span> <span class="fu">pp_check</span>(spmod2, <span class="at">plotfun =</span> <span class="st">"ecdf_overlay"</span>, <span class="at">ndraws =</span> <span class="dv">20</span>) <span class="sc">+</span></span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Abundance"</span>) <span class="sc">+</span></span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_cartesian</span>(<span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">750</span>))</span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>p2b <span class="ot">&lt;-</span> <span class="fu">pp_check</span>(spmod2,  <span class="at">plotfun =</span> <span class="st">"ecdf_overlay"</span>, </span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a>         <span class="at">summary_stat =</span> <span class="cf">function</span>(x) <span class="fu">sum</span>(x<span class="sc">&gt;</span><span class="dv">0</span>), <span class="at">ndraws =</span> <span class="dv">20</span>) <span class="sc">+</span> </span>
+<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Richness"</span>)<span class="sc">+</span></span>
+<span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_cartesian</span>(<span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">12</span>))</span>
+<span id="cb57-8"><a href="#cb57-8" aria-hidden="true" tabindex="-1"></a>p1b <span class="sc">+</span> p2b <span class="sc">+</span> <span class="fu">plot_annotation</span>(<span class="at">tag_levels =</span> <span class="st">"a"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/sp2%20pp_check-1.png" class="img-fluid figure-img" width="768"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>We combine (some of) the posterior predictive check plots for the two models for the paper:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>p2 <span class="sc">+</span> p2b <span class="sc">+</span> <span class="fu">plot_annotation</span>(<span class="at">tag_levels =</span> <span class="st">"a"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid figure-img" width="768"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="fu">multi_pp_check</span>(spmod2, <span class="at">plotfun =</span> <span class="st">"ecdf_overlay"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/sp2%20multi_pp_check-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>We can also plot the environmental effects for each species:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="fu">envplot</span>(spmod2, <span class="at">widths =</span> <span class="fu">c</span>(<span class="fl">1.2</span>,<span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/sp2%20envplot-1.png" class="img-fluid figure-img" width="768"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>We can also plot latent variable loadings for the species and sites:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a>o1v2 <span class="ot">&lt;-</span> <span class="fu">ordiplot</span>(spmod2, <span class="at">ndraws =</span> <span class="dv">0</span>, <span class="at">geom =</span> <span class="st">"text"</span>, <span class="at">size =</span> <span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">1</span>),</span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a>                 <span class="at">errorbar_linewidth =</span> <span class="fl">0.5</span>, <span class="at">errorbar_range =</span> <span class="fl">0.5</span>) <span class="sc">+</span> </span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"none"</span>)</span>
+<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a>o2v2 <span class="ot">&lt;-</span> <span class="fu">ordiplot</span>(spmod2, <span class="at">ndraws =</span> <span class="dv">0</span>, <span class="at">geom =</span> <span class="st">"text"</span>, <span class="at">type =</span> <span class="st">"sites"</span>, <span class="at">size =</span> <span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">1</span>), </span>
+<span id="cb61-5"><a href="#cb61-5" aria-hidden="true" tabindex="-1"></a>                 <span class="at">errorbar_range =</span> <span class="cn">NULL</span>)</span>
+<span id="cb61-6"><a href="#cb61-6" aria-hidden="true" tabindex="-1"></a>o1v2 <span class="sc">+</span> o2v2 <span class="sc">+</span> <span class="fu">plot_annotation</span>(<span class="at">tag_levels =</span> <span class="st">"a"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/sp2%20ordiplot-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Comparing the latent variable plots for the two models shows clearly that the reduced model loses the linear trend in latent variable loadings.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a>o1 <span class="sc">+</span> o2 <span class="sc">+</span> o1v2 <span class="sc">+</span> o2v2 <span class="sc">+</span> <span class="fu">plot_annotation</span>(<span class="at">tag_levels =</span> <span class="st">"a"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="jsdmstan-book_files/figure-html/sp%20all%20ordiplots-1.png" class="img-fluid figure-img" width="768"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="references" class="level1">
+<h1>References</h1>
+<p>Warton et al (2015) So many variables: joint modeling in community ecology. Trends in Ecology &amp; Evolution, 30:766-779. DOI: <a href="http:://doi.org/10.1016/j.tree.2015.09.007">10.1016/j.tree.2015.09.007</a>.</p>
+<p>Wilkinson et al (2021) Defining and evaluating predictions of joint species distribution models. Methods in Ecology and Evolution, 12:394-404. DOI: <a href="http:://doi.org/10.1111/2041-210X.13518">10.1111/2041-210X.13518</a>.</p>
+<p>Vehtari, A., Gelman, A., and Gabry, J. (2017). Practical Bayesian model evaluation using leave-one-out cross-validation and WAIC. Statistics and Computing. 27(5), 1413–1432. DOI: <a href="http::doi.org/10.1007/s11222-016-9696-4">10.1007/s11222-016-9696-4</a>.</p>
+<section id="session-information" class="level2">
+<h2 class="anchored" data-anchor-id="session-information">Session Information</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>R version 4.5.0 (2025-04-11 ucrt)
+Platform: x86_64-w64-mingw32/x64
+Running under: Windows 11 x64 (build 22631)
+
+Matrix products: default
+  LAPACK version 3.12.1
+
+locale:
+[1] LC_COLLATE=English_United Kingdom.utf8 
+[2] LC_CTYPE=English_United Kingdom.utf8   
+[3] LC_MONETARY=English_United Kingdom.utf8
+[4] LC_NUMERIC=C                           
+[5] LC_TIME=English_United Kingdom.utf8    
+
+time zone: Europe/London
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices datasets  utils     methods   base     
+
+other attached packages:
+[1] patchwork_1.3.0 ggplot2_3.5.2   dplyr_1.1.4     jsdmstan_0.4.2 
+
+loaded via a namespace (and not attached):
+ [1] tensorA_0.36.2.1     tidyr_1.3.1          generics_0.1.4      
+ [4] renv_1.1.4           rstatix_0.7.2        stringi_1.8.7       
+ [7] digest_0.6.37        magrittr_2.0.3       evaluate_1.0.3      
+[10] grid_4.5.0           RColorBrewer_1.1-3   fastmap_1.2.0       
+[13] plyr_1.8.9           jsonlite_2.0.0       processx_3.8.6      
+[16] pkgbuild_1.4.8       backports_1.5.0      Formula_1.2-5       
+[19] ps_1.9.1             gridExtra_2.3        purrr_1.0.4         
+[22] QuickJSR_1.7.0       scales_1.4.0         codetools_0.2-20    
+[25] abind_1.4-8          cli_3.6.5            rlang_1.1.6         
+[28] cowplot_1.1.3        withr_3.0.2          yaml_2.3.10         
+[31] StanHeaders_2.32.10  tools_4.5.0          rstan_2.32.7        
+[34] inline_0.3.21        parallel_4.5.0       reshape2_1.4.4      
+[37] ggsignif_0.6.4       rstantools_2.4.0     checkmate_2.3.2     
+[40] ggpubr_0.6.0         broom_1.0.8          vctrs_0.6.5         
+[43] posterior_1.6.1      R6_2.6.1             matrixStats_1.5.0   
+[46] stats4_4.5.0         lifecycle_1.0.4      stringr_1.5.1       
+[49] car_3.1-3            pkgconfig_2.0.3      callr_3.7.6         
+[52] RcppParallel_5.1.10  pillar_1.10.2        gtable_0.3.6        
+[55] loo_2.8.0            glue_1.8.0           Rcpp_1.0.14         
+[58] xfun_0.52            tibble_3.3.0         tidyselect_1.2.1    
+[61] knitr_1.50           farver_2.1.2         bayesplot_1.12.0    
+[64] htmltools_0.5.8.1    carData_3.0-5        rmarkdown_2.29      
+[67] BH_1.87.0-1          labeling_0.4.3       compiler_4.5.0      
+[70] distributional_0.5.0</code></pre>
+</div>
+</div>
+
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+        const codeEl = trigger.previousElementSibling.cloneNode(true);
+        for (const childEl of codeEl.children) {
+          if (isCodeAnnotation(childEl)) {
+            childEl.remove();
+          }
+        }
+        return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
